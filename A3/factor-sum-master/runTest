@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# Add more files or threads if you wanna, make sure the files are in the directory
+FILES="hard.txt hard2.txt medium.txt "
+THREADS_TO_USE="1 2 3 4 8 16"
+
+# Change this two variables to fit the name of the old executable and the new threaded one
+OG_PROGRAM=factor-sum/sumFactors
+THREADED_PROGRAM=sumFactors
+
+
+
+if [ ! -f ./$OG_PROGRAM ]; then
+    echo "$OG_PROGRAM not found in current directory"
+    exit
+fi
+
+if [ ! -f ./$THREADED_PROGRAM ]; then
+    echo "$THREADED_PROGRAM not found in current directory"
+    exit
+fi
+
+
+
+for file in $FILES
+do
+    if [ ! -f ./$file ]; then
+	echo "$file not found in current directory"
+	continue
+    fi  
+    printf "%37s\n" $file
+    printf "%15s %15s %15s %15s %15s %15s\n" "# threads" "timing" "comp to OG" "expected" "percent" "Sum"
+    command_result=$((time ./$OG_PROGRAM 1 < ./$file) 2>&1)
+    og_time=$( echo "$command_result" | grep real | sed -e 's/real[ \t]//' | sed -e 's/0m//' | sed -e 's/s//')
+    result=$( echo "$command_result" | grep "divisor" | grep -oE '[^ ]+$')
+    printf "%15s %15.3g %15.3g %15.3g %15.3g%% %15d\n" "original" $og_time $(bc <<< "$og_time / $og_time") 1 100 $result
+    for thread in $THREADS_TO_USE
+    do
+	command_result=$((time ./$THREADED_PROGRAM $thread < ./$file) 2>&1)
+	time=$( echo "$command_result" | grep real | sed -e 's/real[ \t]//' | sed -e 's/0m//' | sed -e 's/s//')
+	result=$( echo "$command_result" | grep "divisor" | grep -oE '[^ ]+$')
+	comp_to_og=$(bc <<< "scale=3; $og_time / $time")
+	printf "%15d %15.3g %15.3g %15.3g %15.3g%% %15d\n" $thread $time $comp_to_og  $thread $(bc <<< "scale=3; ($comp_to_og / $thread) * 100") $result
+    done
+done
