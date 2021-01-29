@@ -1,0 +1,5 @@
+in linux server
+
+g++ -O2 -Wall fast-pali.cpp -o fast-pali
+
+time ./fast-pali < textfile.txt
